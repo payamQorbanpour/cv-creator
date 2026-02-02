@@ -1,0 +1,94 @@
+{
+  "personal_info": {
+    "name": "John Doe",
+    "title": "Senior Software Engineer",
+    "email": "john.doe@example.com",
+    "phone": "+1-555-0123",
+    "location": "San Francisco, CA",
+    "linkedin": "https://www.linkedin.com/in/johndoe",
+    "github": "https://github.com/johndoe",
+    "website": "https://johndoe.dev"
+  },
+  "summary": "Senior Software Engineer with 6+ years of experience in building scalable systems and leading technical teams. Expertise in backend development, cloud infrastructure, and microservices architecture. Passionate about solving complex problems and delivering high-quality software solutions.",
+  "experience": [
+    {
+      "company": "Tech Company",
+      "position": "Senior Software Engineer",
+      "location": "San Francisco, CA",
+      "start_date": "01/2022",
+      "end_date": "Present",
+      "responsibilities": [
+        "Led development of microservices architecture serving 100K+ daily active users",
+        "Improved system performance by 40% through optimization and refactoring",
+        "Mentored junior developers and conducted code reviews",
+        "Implemented CI/CD pipelines reducing deployment time by 60%",
+        "Collaborated with product team to define technical requirements"
+      ]
+    },
+    {
+      "company": "Previous Company",
+      "position": "Software Engineer",
+      "location": "Remote",
+      "start_date": "06/2019",
+      "end_date": "12/2021",
+      "responsibilities": [
+        "Developed RESTful APIs used by web and mobile applications",
+        "Optimized database queries reducing response time by 50%",
+        "Participated in agile ceremonies and sprint planning",
+        "Built automated testing framework improving code coverage to 85%"
+      ]
+    },
+    {
+      "company": "Startup Inc",
+      "position": "Junior Software Engineer",
+      "location": "New York, NY",
+      "start_date": "01/2018",
+      "end_date": "05/2019",
+      "responsibilities": [
+        "Contributed to full-stack development using modern frameworks",
+        "Collaborated with designers to implement responsive UI components",
+        "Fixed bugs and improved application stability"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "M.Sc. in Computer Science",
+      "institution": "University Name",
+      "location": "City, State",
+      "start_date": "2015",
+      "end_date": "2017",
+      "gpa": "3.8/4.0"
+    },
+    {
+      "degree": "B.Sc. in Computer Science",
+      "institution": "University Name",
+      "location": "City, State",
+      "start_date": "2011",
+      "end_date": "2015",
+      "gpa": "3.6/4.0"
+    }
+  ],
+  "skills": {
+    "Programming Languages": ["Python", "Go", "JavaScript", "TypeScript", "Java"],
+    "Backend": ["FastAPI", "Flask", "Django", "Node.js", "Express"],
+    "Databases": ["PostgreSQL", "MySQL", "MongoDB", "Redis"],
+    "Cloud & DevOps": ["AWS", "Docker", "Kubernetes", "CI/CD", "Terraform"],
+    "Tools": ["Git", "GitHub Actions", "Jenkins", "Jira"]
+  },
+  "projects": [
+    {
+      "name": "Open Source Project",
+      "description": "A popular open-source tool for developers",
+      "technologies": ["Python", "Docker", "React"],
+      "link": "https://github.com/johndoe/project"
+    }
+  ],
+  "certifications": [
+    {
+      "name": "AWS Certified Solutions Architect",
+      "issuer": "Amazon Web Services",
+      "date": "2023"
+    }
+  ]
+}

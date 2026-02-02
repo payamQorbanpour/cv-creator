@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cover Letter - {{ personal_info.name }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2.5cm;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .letterhead {
+            margin-bottom: 30px;
+        }
+        
+        .sender-info {
+            font-size: 10pt;
+            line-height: 1.4;
+        }
+        
+        .sender-name {
+            font-weight: bold;
+            font-size: 12pt;
+            margin-bottom: 5px;
+        }
+        
+        .date {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .recipient-info {
+            margin-bottom: 20px;
+        }
+        
+        .greeting {
+            margin-bottom: 15px;
+        }
+        
+        .content {
+            text-align: justify;
+        }
+        
+        .paragraph {
+            margin-bottom: 15px;
+        }
+        
+        .closing {
+            margin-top: 20px;
+            margin-bottom: 50px;
+        }
+        
+        .signature {
+            font-style: italic;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            padding-top: 10px;
+            border-top: 1px solid #bdc3c7;
+            font-size: 9pt;
+            color: #666;
+            text-align: center;
+        }
+        
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Letterhead -->
+    <div class="letterhead">
+        <div class="sender-name">{{ personal_info.name }}</div>
+        <div class="sender-info">
+            {{ personal_info.location }}<br>
+            {{ personal_info.email }} | {{ personal_info.phone }}
+            {% if personal_info.linkedin %}<br><a href="https://{{ personal_info.linkedin }}">{{ personal_info.linkedin }}</a>{% endif %}
+        </div>
+    </div>
+    
+    <!-- Date -->
+    <div class="date">
+        {% if job_info and job_info.company %}
+        {{ "now" | default("February 2, 2026") }}
+        {% endif %}
+    </div>
+    
+    <!-- Recipient Info -->
+    {% if job_info %}
+    <div class="recipient-info">
+        <strong>Hiring Manager</strong><br>
+        {{ job_info.company }}<br>
+        {% if job_info.company_website %}{{ job_info.company_website }}{% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Greeting -->
+    <div class="greeting">
+        Dear Hiring Manager,
+    </div>
+    
+    <!-- Content -->
+    <div class="content">
+        <!-- Opening Paragraph -->
+        <div class="paragraph">
+            {% if job_info %}
+            I am writing to express my strong interest in the <strong>{{ job_info.title }}</strong> position at <strong>{{ job_info.company }}</strong>. 
+            With my background in {{ personal_info.title }} and proven track record of success, I am excited about the opportunity to contribute to your team.
+            {% else %}
+            I am writing to express my strong interest in joining your organization. With my background in {{ personal_info.title }} 
+            and proven track record of success, I am confident that I would be a valuable addition to your team.
+            {% endif %}
+        </div>
+        
+        <!-- Body Paragraph 1 - Experience -->
+        <div class="paragraph">
+            {% if experience and experience|length > 0 %}
+            In my recent role as {{ experience[0].title }} at {{ experience[0].company }}, I have developed strong expertise in 
+            {% if skills %}
+            {{ skills.values() | list | first | slice(3) | list | join(', ') }}.
+            {% else %}
+            delivering high-quality results and solving complex challenges.
+            {% endif %}
+            {% if experience[0].responsibilities and experience[0].responsibilities|length > 0 %}
+            Key achievements include {{ experience[0].responsibilities[0]|lower }}, which demonstrates my ability to 
+            drive meaningful impact and deliver results.
+            {% endif %}
+            {% endif %}
+        </div>
+        
+        <!-- Body Paragraph 2 - Skills & Fit -->
+        <div class="paragraph">
+            {% if job_info and job_info.description %}
+            I am particularly drawn to this opportunity because {{ job_info.company }} is known for {{ job_info.company_about if job_info.company_about else "innovation and excellence" }}. 
+            {% endif %}
+            My technical proficiency combined with strong problem-solving abilities and collaborative mindset makes me well-suited 
+            to contribute to your team's success. I am passionate about continuous learning and staying current with industry trends, 
+            which enables me to bring fresh perspectives and innovative solutions to complex challenges.
+        </div>
+        
+        <!-- Body Paragraph 3 - Value Proposition -->
+        <div class="paragraph">
+            {% if job_info and job_info.requirements %}
+            Looking at your requirements for this role, I am confident that my experience aligns well with your needs. 
+            {% endif %}
+            I am committed to excellence, thrive in collaborative environments, and am eager to bring my skills and enthusiasm 
+            to {% if job_info %}{{ job_info.company }}{% else %}your organization{% endif %}. 
+            I am excited about the possibility of contributing to innovative projects and growing alongside a dynamic team.
+        </div>
+        
+        <!-- Closing Paragraph -->
+        <div class="paragraph">
+            Thank you for considering my application. I would welcome the opportunity to discuss how my background, skills, and 
+            enthusiasm can contribute to {% if job_info %}{{ job_info.company }}'s{% else %}your organization's{% endif %} continued success. 
+            I look forward to speaking with you soon.
+        </div>
+    </div>
+    
+    <!-- Closing -->
+    <div class="closing">
+        Sincerely,<br>
+        <div class="signature">{{ personal_info.name }}</div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="footer">
+        {{ personal_info.email }} | {{ personal_info.phone }}
+        {% if personal_info.linkedin %} | <a href="https://{{ personal_info.linkedin }}">LinkedIn</a>{% endif %}
+        {% if personal_info.github %} | <a href="https://{{ personal_info.github }}">GitHub</a>{% endif %}
+    </div>
+</body>
+</html>
