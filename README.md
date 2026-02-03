@@ -23,11 +23,23 @@ pip install -r requirements.txt
 brew install python3 cairo pango gdk-pixbuf libffi
 ```
 
-2. **Set up OpenAI API Key (Optional)**:
+2. **Set up AI API (Optional)**:
 To enable AI-powered optimization and parsing, create a `.env` file in the project root:
+
+**For OpenAI:**
+```env
+OPENAI_API_KEY=sk-your-api-key-here
 ```
-OPENAI_API_KEY=your_api_key_here
+
+**For Custom AI providers:**
+```env
+OPENAI_API_URL=[URL]/chat/completions
+OPENAI_API_KEY=your-api-token-here
+OPENAI_MODEL=[GPT-5-Mini]
 ```
+
+**For other providers** (Grok, OpenRouter, Together AI, Ollama, etc.):
+See [`.env.example`](.env.example) for more examples.
 
 **Without AI**: The tool will still work, but will use your base data as-is without customization.
 

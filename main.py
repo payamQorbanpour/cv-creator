@@ -10,6 +10,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 from weasyprint import HTML
 import argparse
+import requests
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -23,23 +24,81 @@ class CVCreator:
         self.base_data = self.load_base_data()
         self.template_env = Environment(loader=FileSystemLoader('templates'))
         self.openai_client = None
+        self.api_url = None
+        self.api_key = None
+        self.model_name = None
         
         # Initialize AI if API key is available and use_ai is True
         api_key = os.getenv('OPENAI_API_KEY')
+        api_url = os.getenv('OPENAI_API_URL')  # Full URL for direct requests
+        base_url = os.getenv('OPENAI_BASE_URL')  # Base URL for OpenAI client
+        model_name = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')  # Default model
+        
         if use_ai and api_key:
             try:
-                self.openai_client = OpenAI(api_key=api_key)
-                self.use_ai = True
-                print("✓ AI features enabled (OpenAI API)")
+                self.api_key = api_key
+                self.model_name = model_name
+                
+                # Use direct HTTP requests if OPENAI_API_URL is provided
+                if api_url:
+                    self.api_url = api_url
+                    self.use_ai = True
+                    print(f"✓ AI features enabled (Direct API: {api_url})")
+                    print(f"  Using model: {model_name}")
+                else:
+                    # Use OpenAI client
+                    client_kwargs = {'api_key': api_key}
+                    if base_url:
+                        client_kwargs['base_url'] = base_url
+                    
+                    self.openai_client = OpenAI(**client_kwargs)
+                    self.use_ai = True
+                    
+                    provider_name = "OpenAI API" if not base_url else f"Custom API ({base_url})"
+                    print(f"✓ AI features enabled ({provider_name})")
+                    print(f"  Using model: {model_name}")
             except Exception as e:
-                print(f"⚠️  Failed to initialize OpenAI client: {e}")
+                print(f"⚠️  Failed to initialize AI client: {e}")
                 self.use_ai = False
         else:
             self.use_ai = False
             if use_ai and not api_key:
                 print("⚠️  OPENAI_API_KEY not found - AI features disabled")
                 print("   Set OPENAI_API_KEY in .env file to enable AI optimization")
+                print("   Optional: Set OPENAI_API_URL for direct API calls (full URL)")
+                print("   Optional: Set OPENAI_BASE_URL for OpenAI-compatible APIs")
+                print("   Optional: Set OPENAI_MODEL to use a different model")
         
+    def call_ai_api(self, messages, temperature=0.3, max_tokens=2000):
+        """Make AI API call - supports both direct URL and OpenAI client"""
+        if self.api_url:
+            # Direct HTTP request
+            headers = {
+                'Authorization': self.api_key,
+                'Content-Type': 'application/json'
+            }
+            data = {
+                'model': self.model_name,
+                'messages': messages,
+                'temperature': temperature,
+                'max_tokens': max_tokens,
+                'stream': False
+            }
+            
+            response = requests.post(self.api_url, headers=headers, json=data, timeout=60)
+            response.raise_for_status()
+            result = response.json()
+            return result['choices'][0]['message']['content']
+        else:
+            # OpenAI client
+            response = self.openai_client.chat.completions.create(
+                model=self.model_name,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
+            return response.choices[0].message.content
+    
     def load_base_data(self):
         """Load base personal data from JSON file"""
         if os.path.exists(self.base_data_file):
@@ -113,6 +172,91 @@ class CVCreator:
         with open(self.base_data_file, 'w', encoding='utf-8') as f:
             json.dump(self.base_data, f, indent=4)
     
+    def parse_merged_text_with_ai(self, text):
+        """Parse plain text file containing both company and job info"""
+        if not self.use_ai:
+            # Basic parsing without AI - try to split by sections
+            lines = text.strip().split('\n')
+            company_text = ""
+            job_text = ""
+            in_company_section = False
+            in_job_section = False
+            
+            for line in lines:
+                line_upper = line.upper()
+                if 'COMPANY' in line_upper and ('INFO' in line_upper or 'ABOUT' in line_upper or '===' in line):
+                    in_company_section = True
+                    in_job_section = False
+                    continue
+                elif 'JOB' in line_upper and ('DESC' in line_upper or 'ROLE' in line_upper or '===' in line):
+                    in_job_section = True
+                    in_company_section = False
+                    continue
+                
+                if in_company_section:
+                    company_text += line + '\n'
+                elif in_job_section:
+                    job_text += line + '\n'
+            
+            # If we couldn't split, treat entire text as job description
+            if not job_text:
+                job_text = text
+                company_text = "Company information not provided"
+            
+            return {
+                'job': self.parse_job_description_with_ai(job_text),
+                'company': self.parse_company_info_with_ai(company_text) if company_text else {'name': 'Company', 'about': ''}
+            }
+        
+        # Use AI to parse both sections
+        prompt = f"""Parse this document which contains both company information and a job description.
+Extract and return a JSON object with two top-level keys:
+- "company": object with fields (name, about, industry, values, etc.)
+- "job": object with fields (title, description, requirements, key_responsibilities, desired_skills, etc.)
+
+Document:
+{text}
+
+Return ONLY valid JSON with 'company' and 'job' keys, no markdown formatting."""
+
+        try:
+            print("  🤖 Parsing document with AI...")
+            result = self.call_ai_api(
+                messages=[
+                    {"role": "system", "content": "You are an expert at parsing job postings and extracting structured information. Return only valid JSON."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,
+                max_tokens=2500
+            ).strip()
+            
+            # Remove markdown code blocks if present
+            if result.startswith('```'):
+                result = result.split('```')[1]
+                if result.startswith('json'):
+                    result = result[4:]
+                result = result.strip()
+            
+            parsed = json.loads(result)
+            print("  ✓ Document parsed successfully")
+            
+            # Ensure both sections exist
+            if 'job' not in parsed or 'company' not in parsed:
+                # Try to extract what we can
+                job_data = parsed.get('job', parsed.get('job_description', {}))
+                company_data = parsed.get('company', parsed.get('company_info', {}))
+                return {'job': job_data, 'company': company_data}
+            
+            return parsed
+            
+        except Exception as e:
+            print(f"  ⚠️  AI parsing failed: {e}")
+            # Fall back to basic parsing
+            return {
+                'job': {'title': 'Position', 'description': text[:500], 'requirements': []},
+                'company': {'name': 'Company', 'about': ''}
+            }
+    
     def parse_job_description_with_ai(self, text):
         """Parse plain text job description using AI (or basic parsing if AI unavailable)"""
         if not self.use_ai or not self.openai_client:
@@ -141,17 +285,14 @@ Return ONLY valid JSON, no markdown formatting."""
 
         try:
             print("  🤖 Parsing job description with AI...")
-            response = self.openai_client.chat.completions.create(
-                model="gpt-4o-mini",
+            result = self.call_ai_api(
                 messages=[
                     {"role": "system", "content": "You are an expert at parsing job descriptions and extracting structured information. Return only valid JSON."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.3,
                 max_tokens=2000
-            )
-            
-            result = response.choices[0].message.content.strip()
+            ).strip()
             # Remove markdown code blocks if present
             if result.startswith('```'):
                 result = result.split('```')[1]
@@ -203,17 +344,14 @@ Return ONLY valid JSON, no markdown formatting."""
 
         try:
             print("  🤖 Parsing company information with AI...")
-            response = self.openai_client.chat.completions.create(
-                model="gpt-4o-mini",
+            result = self.call_ai_api(
                 messages=[
                     {"role": "system", "content": "You are an expert at parsing company information and extracting structured details. Return only valid JSON."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.3,
                 max_tokens=1500
-            )
-            
-            result = response.choices[0].message.content.strip()
+            ).strip()
             # Remove markdown code blocks if present
             if result.startswith('```'):
                 result = result.split('```')[1]
@@ -253,17 +391,14 @@ Return only the bullet points, one per line, starting with a dash (-)."""
 
         try:
             print("  🤖 Optimizing bullets with AI...")
-            response = self.openai_client.chat.completions.create(
-                model="gpt-4o-mini",
+            optimized_text = self.call_ai_api(
                 messages=[
                     {"role": "system", "content": "You are a professional resume writer who creates natural, human-sounding resume bullets that match job descriptions without inventing experience or using excessive corporate speak."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
                 max_tokens=1000
-            )
-            
-            optimized_text = response.choices[0].message.content.strip()
+            ).strip()
             # Parse the bullets from the response
             optimized_bullets = []
             for line in optimized_text.split('\n'):
@@ -298,17 +433,14 @@ Return only the rewritten summary."""
 
         try:
             print("  🤖 Optimizing professional summary with AI...")
-            response = self.openai_client.chat.completions.create(
-                model="gpt-4o-mini",
+            optimized_summary = self.call_ai_api(
                 messages=[
                     {"role": "system", "content": "You are a professional resume writer who creates natural, authentic professional summaries that align with job descriptions without inventing experience."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
                 max_tokens=500
-            )
-            
-            optimized_summary = response.choices[0].message.content.strip()
+            ).strip()
             return optimized_summary
             
         except Exception as e:
@@ -390,14 +522,27 @@ Return only the rewritten summary."""
         # Load job and company information (can be JSON or plain text)
         # Support both merged format and separate files
         if company_file is None:
-            # Load merged format
+            # Try to load as merged format (single file with both job and company)
             merged_data = self.load_input_file(job_file, 'merged')
             if isinstance(merged_data, dict) and 'job' in merged_data and 'company' in merged_data:
+                # Properly formatted merged JSON
                 job_description = merged_data['job']
                 company_info = merged_data['company']
                 print("✓ Loaded merged job and company data from single file")
+            elif isinstance(merged_data, dict) and 'job_description' in merged_data and 'company_info' in merged_data:
+                # Alternative format with job_description and company_info keys
+                job_description = merged_data['job_description']
+                company_info = merged_data['company_info']
+                print("✓ Loaded merged job and company data from single file")
             else:
-                raise ValueError("Merged file must contain 'job' and 'company' sections")
+                # Single plain text file with job info - extract company from text
+                job_description = merged_data
+                # Extract company info from job description if available
+                company_info = {
+                    'name': job_description.get('company_name', 'Company'),
+                    'about': 'Company information extracted from job description'
+                }
+                print("✓ Loaded job data from single file")
         else:
             # Load separate files (backwards compatibility)
             job_description = self.load_input_file(job_file, 'job')
@@ -461,7 +606,9 @@ Return only the rewritten summary."""
         except json.JSONDecodeError:
             # It's plain text, parse with AI
             if input_type == 'merged':
-                raise ValueError("Merged format must be JSON")
+                # For merged format, try to parse as single document with sections
+                print(f"📄 Detected plain text file, parsing with AI...")
+                return self.parse_merged_text_with_ai(content)
             print(f"📄 Detected plain text {input_type} file, parsing with AI...")
             if input_type == 'job':
                 return self.parse_job_description_with_ai(content)

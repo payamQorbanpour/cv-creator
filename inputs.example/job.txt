@@ -1,0 +1,40 @@
+=== COMPANY INFO ===
+A leading technology company focused on innovative solutions in the enterprise SaaS space. We specialize in developing cutting-edge products that help businesses streamline their operations, improve productivity, and drive growth.
+
+
+=== JOB DESCRIPTION ===
+We are on a mission to make Bitcoin the go-to savings technology - simple, accessible, and secure. As Europe's leading Bitcoin startup, we're pioneering the future of Bitcoin investing by making it effortless for individuals and institutions alike to buy, sell, and hold Bitcoin without complexity or middlemen.
+
+Responsibilities:
+Design, develop, and maintain high-quality backend microservices using Go, ensuring scalability, reliability, and performance
+Collaborate closely with cross-functional teams, including product managers, DevOps engineers, and QA/test engineers
+Participate in code reviews and audits, providing constructive feedback to maintain high standards
+Optimize application performance, ensuring efficient use of resources and minimal latency
+Contribute to architecture decisions for distributed systems
+Implement and maintain APIs, ensuring seamless communication between services
+Troubleshoot and resolve production-level issues quickly and effectively
+Stay up to date with Go best practices and industry trend
+
+Requirements:
+5+ years of professional experience in backend development
+3+ years of hands-on experience with Go (Golang)
+Strong preference for simple, iterative solutions
+Obsession with maintainable, high-quality code
+Self-starter mindset, capable of working independently
+Proven experience in API development (RESTful or gRPC)
+Familiarity with CI/CD pipelines and tools
+Experience working in an agile environment
+Solid knowledge of cloud and microservice design pattern
+
+Nice To Have: 
+Experience with Bitcoin or cryptocurrency systems
+Knowledge of financial systems and regulations
+Experience with Kubernetes and containerization
+
+Benefits:
+100% remote work - fully remote, flexible team across Europe
+Latest MacBook laptop and iPhone provided
+Competitive salary + employee participation
+0% fees on Bitcoin purchases
+Blinkist, Spotify, and Netflix subscriptions
+Senior role in fast-growing Bitcoin compan
