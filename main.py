@@ -385,11 +385,23 @@ Return only the rewritten summary."""
         
         return folder_path
     
-    def process_application(self, job_file, company_file):
+    def process_application(self, job_file, company_file=None):
         """Main process to generate all documents for a job application"""
         # Load job and company information (can be JSON or plain text)
-        job_description = self.load_input_file(job_file, 'job')
-        company_info = self.load_input_file(company_file, 'company')
+        # Support both merged format and separate files
+        if company_file is None:
+            # Load merged format
+            merged_data = self.load_input_file(job_file, 'merged')
+            if isinstance(merged_data, dict) and 'job' in merged_data and 'company' in merged_data:
+                job_description = merged_data['job']
+                company_info = merged_data['company']
+                print("✓ Loaded merged job and company data from single file")
+            else:
+                raise ValueError("Merged file must contain 'job' and 'company' sections")
+        else:
+            # Load separate files (backwards compatibility)
+            job_description = self.load_input_file(job_file, 'job')
+            company_info = self.load_input_file(company_file, 'company')
         
         # Customize data for this job
         customized_data = self.customize_for_job(job_description, company_info)
@@ -441,10 +453,15 @@ Return only the rewritten summary."""
         # Try to parse as JSON first
         try:
             data = json.loads(content)
-            print(f"✓ Loaded {input_type} data from JSON file")
+            if input_type == 'merged':
+                print(f"✓ Loaded merged data from JSON file")
+            else:
+                print(f"✓ Loaded {input_type} data from JSON file")
             return data
         except json.JSONDecodeError:
             # It's plain text, parse with AI
+            if input_type == 'merged':
+                raise ValueError("Merged format must be JSON")
             print(f"📄 Detected plain text {input_type} file, parsing with AI...")
             if input_type == 'job':
                 return self.parse_job_description_with_ai(content)
@@ -456,19 +473,19 @@ Return only the rewritten summary."""
 
 def main():
     parser = argparse.ArgumentParser(description='Generate customized resume and cover letter')
-    parser.add_argument('--job', '-j', required=True, help='Path to job description (JSON or plain text file)')
-    parser.add_argument('--company', '-c', required=True, help='Path to company info (JSON or plain text file)')
-    parser.add_argument('--base', '-b', default='inputs/base_data.json', help='Path to base data JSON file')
+    parser.add_argument('--job', '-j', required=True, help='Path to job file (JSON with company and job sections, or plain text). Use merged format: {"company": {...}, "job": {...}}')
+    parser.add_argument('--company', '-c', help='Path to separate company info file (optional, for backwards compatibility)')
+    parser.add_argument('--base', '-b', default='inputs/base_data.json', help='Path to base data JSON file (default: inputs/base_data.json)')
     parser.add_argument('--use-ai', action='store_true', help='Enable AI optimization for resume customization (requires OPENAI_API_KEY)')
     
     args = parser.parse_args()
     
     # Check if required files exist
     if not os.path.exists(args.job):
-        print(f"Error: Job description file not found: {args.job}")
+        print(f"Error: Job file not found: {args.job}")
         return
     
-    if not os.path.exists(args.company):
+    if args.company and not os.path.exists(args.company):
         print(f"Error: Company info file not found: {args.company}")
         return
     
@@ -481,7 +498,10 @@ def main():
         print("🤖 AI optimization enabled - resumes will be customized for the job")
     else:
         print("⚡ AI optimization disabled - using base resume data")
-    print("📄 Supports JSON or plain text files for job descriptions and company info\n")
+    if args.company:
+        print("📄 Using separate job and company files (legacy mode)\n")
+    else:
+        print("📄 Using merged job file format\n")
     
     # Process application
     creator.process_application(args.job, args.company)

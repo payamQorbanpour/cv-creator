@@ -36,19 +36,46 @@ Edit `inputs/base_data.json` with your personal information, experience, educati
 
 ## Usage
 
-### Quick Start with Plain Text
+### Quick Start with Merged Format (Recommended)
 
-1. **Copy the job description** from any job posting
-2. **Save it** to a text file (e.g., `job.txt`)
-3. **Copy company information** (from their website, About page, etc.)
-4. **Save it** to another text file (e.g., `company.txt`)
-5. **Run the generator**:
+The easiest way is to use a single JSON file with both company and job information:
 
+1. **Create a job file** (`inputs/job.json`):
+```json
+{
+    "company": {
+        "name": "Tech Innovations Inc.",
+        "about": "Company description...",
+        "industry": "Enterprise SaaS",
+        "values": ["Innovation", "Transparency"]
+    },
+    "job": {
+        "title": "Senior Go Developer",
+        "description": "Job description...",
+        "responsibilities": [...],
+        "requirements": [...]
+    }
+}
+```
+
+2. **Run the generator**:
 ```bash
 # Without AI optimization (default, no API key needed)
-python main.py -j job.txt -c company.txt
+python main.py -j inputs/job.json
 
 # With AI optimization (requires OPENAI_API_KEY in .env)
+python main.py -j inputs/job.json --use-ai
+```
+
+### Using Separate Files (Legacy Mode)
+
+You can still use separate files for backwards compatibility:
+
+```bash
+# Without AI optimization
+python main.py -j job.txt -c company.txt
+
+# With AI optimization
 python main.py -j job.txt -c company.txt --use-ai
 ```
 
@@ -67,14 +94,16 @@ python main.py -j job.txt -c company.txt --use-ai
 ### Command Line Options
 
 ```bash
-python main.py -j <job_file> -c <company_file> [-b <base_data_file>] [--use-ai]
+python main.py -j <job_file> [-c <company_file>] [-b <base_data_file>] [--use-ai]
 
 Options:
-  -j, --job       Path to job description (plain text or JSON)
-  -c, --company   Path to company info (plain text or JSON)
+  -j, --job       Path to job file (JSON with 'company' and 'job' sections, or plain text)
+  -c, --company   Path to separate company info file (optional, for backwards compatibility)
   -b, --base      Path to your base data JSON (default: inputs/base_data.json)
   --use-ai        Enable AI optimization (requires OPENAI_API_KEY in .env)
 ```
+
+**Note:** The `--base` parameter now defaults to `inputs/base_data.json`, so you don't need to specify it every time.
 
 ## How It Works
 
