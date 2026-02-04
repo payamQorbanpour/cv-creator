@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cover Letter - {{ personal_info.name }}</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600;700&display=swap');
+        
         @page {
             size: A4;
             margin: 2cm;
@@ -17,53 +19,57 @@
         }
         
         body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
-            font-size: 10.5pt;
-            line-height: 1.5;
-            color: #333;
+            font-family: 'Source Sans Pro', sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #000;
             max-height: 297mm;
             overflow: hidden;
         }
         
         .letterhead {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            text-align: center;
         }
         
         .sender-info {
-            font-size: 9.5pt;
-            line-height: 1.3;
+            font-size: 10pt;
+            line-height: 1.4;
         }
         
         .sender-name {
             font-weight: bold;
-            font-size: 11pt;
-            margin-bottom: 4px;
+            font-size: 18pt;
+            margin-bottom: 8px;
         }
         
         .date {
-            margin-top: 15px;
-            margin-bottom: 15px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            text-align: right;
         }
         
         .recipient-info {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            text-align: left;
         }
         
         .greeting {
-            margin-bottom: 12px;
+            margin-bottom: 15px;
         }
         
         .content {
             text-align: justify;
+            line-height: 1.8;
         }
         
         .paragraph {
-            margin-bottom: 12px;
+            margin-bottom: 15px;
         }
         
         .closing {
-            margin-top: 15px;
-            margin-bottom: 30px;
+            margin-top: 20px;
+            margin-bottom: 40px;
         }
         
         .signature {
@@ -71,16 +77,16 @@
         }
         
         .footer {
-            margin-top: 20px;
-            padding-top: 8px;
-            border-top: 1px solid #bdc3c7;
-            font-size: 8.5pt;
-            color: #666;
+            margin-top: 25px;
+            padding-top: 10px;
+            border-top: 1px solid #999;
+            font-size: 9pt;
+            color: #333;
             text-align: center;
         }
         
         a {
-            color: #3498db;
+            color: #2980b9;
             text-decoration: none;
         }
     </style>
@@ -89,28 +95,19 @@
     <!-- Letterhead -->
     <div class="letterhead">
         <div class="sender-name">{{ personal_info.name }}</div>
+        <div class="sender-info">{{ personal_info.title }}</div>
         <div class="sender-info">
-            {{ personal_info.location }}<br>
-            {{ personal_info.email }} | {{ personal_info.phone }}
-            {% if personal_info.linkedin %}<br><a href="https://{{ personal_info.linkedin }}">{{ personal_info.linkedin }}</a>{% endif %}
+            {% if personal_info.email %}{{ personal_info.email }}{% endif %}
+            {% if personal_info.phone %} | {{ personal_info.phone }}{% endif %}
+            {% if personal_info.location %} | {{ personal_info.location }}{% endif %}
+            {% if personal_info.birth_year %} | {{ personal_info.birth_year }}{% endif %}
         </div>
     </div>
     
     <!-- Date -->
     <div class="date">
-        {% if job_info and job_info.company %}
-        {{ "now" | default("February 2, 2026") }}
-        {% endif %}
+        {{ current_date }}
     </div>
-    
-    <!-- Recipient Info -->
-    {% if job_info %}
-    <div class="recipient-info">
-        <strong>Hiring Manager</strong><br>
-        {{ job_info.company }}<br>
-        {% if job_info.company_website %}{{ job_info.company_website }}{% endif %}
-    </div>
-    {% endif %}
     
     <!-- Greeting -->
     <div class="greeting">
@@ -119,6 +116,15 @@
     
     <!-- Content -->
     <div class="content">
+        {% if cover_letter_content %}
+        <!-- AI-Generated Cover Letter Content -->
+        {% for paragraph in cover_letter_content.split('\n\n') %}
+        <div class="paragraph">
+            {{ paragraph | replace('\n', '<br>') }}
+        </div>
+        {% endfor %}
+        {% else %}
+        <!-- Fallback: Original Template Content -->
         <!-- Opening Paragraph -->
         <div class="paragraph">
             {% if job_info %}
@@ -135,7 +141,7 @@
             {% if experience and experience|length > 0 %}
             In my recent role as {{ experience[0].title }} at {{ experience[0].company }}, I have developed strong expertise in 
             {% if skills %}
-            {{ skills.values() | list | first | slice(3) | list | join(', ') }}.
+            {{ skills.keys() | list | slice(3) | list | join(', ') }}.
             {% else %}
             delivering high-quality results and solving complex challenges.
             {% endif %}
@@ -148,8 +154,10 @@
         
         <!-- Body Paragraph 2 - Skills & Fit -->
         <div class="paragraph">
-            {% if job_info and job_info.description %}
-            I am particularly drawn to this opportunity because {{ job_info.company }} is known for {{ job_info.company_about if job_info.company_about else "innovation and excellence" }}. 
+            {% if job_info and job_info.company_about %}
+            I am particularly drawn to this opportunity at {{ job_info.company }}. {{ job_info.company_about }} 
+            {% elif job_info and job_info.description %}
+            I am particularly drawn to this opportunity because {{ job_info.company }} is known for innovation and excellence. 
             {% endif %}
             My technical proficiency combined with strong problem-solving abilities and collaborative mindset makes me well-suited 
             to contribute to your team's success. I am passionate about continuous learning and staying current with industry trends, 
@@ -172,6 +180,7 @@
             enthusiasm can contribute to {% if job_info %}{{ job_info.company }}'s{% else %}your organization's{% endif %} continued success. 
             I look forward to speaking with you soon.
         </div>
+        {% endif %}
     </div>
     
     <!-- Closing -->
@@ -182,9 +191,10 @@
     
     <!-- Footer -->
     <div class="footer">
-        {{ personal_info.email }} | {{ personal_info.phone }}
-        {% if personal_info.linkedin %} | <a href="https://{{ personal_info.linkedin }}">LinkedIn</a>{% endif %}
-        {% if personal_info.github %} | <a href="https://{{ personal_info.github }}">GitHub</a>{% endif %}
+        {{ personal_info.email }}{% if personal_info.phone %} | {{ personal_info.phone }}{% endif %}
+        {% if personal_info.linkedin %} | <a href="{{ personal_info.linkedin }}">LinkedIn</a>{% endif %}
+        {% if personal_info.github %} | <a href="{{ personal_info.github }}">GitHub</a>{% endif %}
+        {% if personal_info.medium %} | <a href="{{ personal_info.medium }}">Medium</a>{% endif %}
     </div>
 </body>
 </html>

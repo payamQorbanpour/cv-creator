@@ -447,6 +447,146 @@ Return only the rewritten summary."""
             print(f"  ⚠️  AI optimization failed: {e}")
             return summary
     
+    def generate_cover_letter_with_ai(self, candidate_data, job_description, company_info):
+        """Generate a full cover letter using AI with the specialized prompt"""
+        if not self.use_ai:
+            # Fallback: return a simple cover letter paragraph
+            return f"I am writing to express my interest in the {job_description.get('title', 'position')} role at {company_info.get('name', 'your company')}."
+        
+        # Prepare candidate context
+        personal_info = candidate_data.get('personal_info', {})
+        candidate_name = personal_info.get('name', 'Payam Qorbanpour')
+        current_role = candidate_data.get('experience', [{}])[0].get('title', 'Senior Software Engineer')
+        location = personal_info.get('location', 'Tehran, Iran')
+        
+        # Extract core skills
+        skills_dict = candidate_data.get('skills', {})
+        core_skills = []
+        for category, skill_list in skills_dict.items():
+            if isinstance(skill_list, list):
+                core_skills.extend(skill_list[:3])
+        core_skills_text = ", ".join(core_skills[:6]) if core_skills else "Golang, go-kit, C/C++, API design, distributed systems, cloud platforms"
+        
+        # Extract recent experience highlights
+        recent_exp = candidate_data.get('experience', [{}])[0]
+        responsibilities = recent_exp.get('responsibilities', [])
+        experience_highlights = "\n  - ".join(responsibilities[:4]) if responsibilities else ""
+        
+        # Job and company details
+        job_title = job_description.get('title', 'Senior Go Developer (m/f/d)')
+        company_name = company_info.get('name', 'Relai')
+        company_mission = company_info.get('about', 'Make Bitcoin the go-to savings technology—simple, accessible, and secure')
+        
+        prompt = f"""You are a senior technical recruiter and hiring manager combined, with deep experience hiring Senior Software Engineers in high-growth startups.
+
+Your task is to write a highly effective, human-sounding cover letter that follows modern best practices and avoids generic phrasing.
+
+CONTEXT:
+- Candidate name: {candidate_name}
+- Current role: {current_role}
+- Location: {location}
+- Core skills: {core_skills_text}
+- Recent experience highlights:
+  - {experience_highlights}
+
+TARGET ROLE:
+- Title: {job_title}
+- Company: {company_name}
+- Company mission: {company_mission}
+
+WRITING REQUIREMENTS:
+- Length: 1 page max (300–400 words)
+- Tone: Confident, concise, senior-level, authentic
+- Avoid clichés such as: "I am excited to apply", "team player", "passionate about technology"
+- Start with a strong hook that highlights impact, not intent
+- Emphasize measurable outcomes and engineering ownership
+- Clearly connect candidate experience to the company's mission and the specific role
+- Sound like a real human engineer, not corporate boilerplate
+- Do NOT repeat the resume; interpret it strategically
+- End with a clear, professional call to action
+
+OUTPUT FORMAT:
+- Start directly with the FIRST PARAGRAPH (skip any greeting - the template handles that)
+- Do NOT include "Dear Hiring Manager," or any greeting
+- Do NOT include sender's name, address, or contact information (the template handles that)
+- Do NOT include date, recipient address, or signature (the template handles that)
+- Generate ONLY the body paragraphs (3-4 paragraphs max to fit one page)
+- Keep it concise to ensure it fits on ONE PAGE
+- Use clear paragraphs (no bullet points)
+- Use natural language that a hiring manager would actually enjoy reading
+- End with a closing sentence (e.g., "I look forward to discussing...")
+
+Generate the cover letter now."""
+
+        try:
+            print("  🤖 Generating cover letter with AI...")
+            cover_letter_content = self.call_ai_api(
+                messages=[
+                    {"role": "system", "content": "You are a senior technical recruiter and hiring manager who writes authentic, impactful cover letters that avoid clichés and focus on concrete achievements."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=1500
+            ).strip()
+            
+            print("  ✓ Cover letter generated successfully")
+            
+            # Optional: Polish the cover letter (make it sharper)
+            polish_prompt = """Rewrite this cover letter to be 15% shorter, sharper, and more direct.
+Remove anything that sounds generic or replaceable.
+Keep the same structure and key points, but make every sentence count.
+
+Cover letter:
+""" + cover_letter_content
+            
+            try:
+                print("  🤖 Polishing cover letter...")
+                polished_content = self.call_ai_api(
+                    messages=[
+                        {"role": "system", "content": "You are an expert editor who makes writing sharper and more impactful by removing unnecessary words and generic phrases."},
+                        {"role": "user", "content": polish_prompt}
+                    ],
+                    temperature=0.5,
+                    max_tokens=1200
+                ).strip()
+                print("  ✓ Cover letter polished")
+                return polished_content
+            except Exception as e:
+                print(f"  ⚠️  Polishing failed, using original: {e}")
+                return cover_letter_content
+            
+        except Exception as e:
+            print(f"  ⚠️  AI cover letter generation failed: {e}")
+            # Fallback
+            return f"I am writing to apply for the {job_title} position at {company_name}. With my experience in {core_skills_text}, I believe I would be a strong addition to your team."
+    
+    def generate_basic_cover_letter(self, candidate_data, job_description, company_info):
+        """Generate a basic cover letter without AI"""
+        personal_info = candidate_data.get('personal_info', {})
+        candidate_name = personal_info.get('name', 'Your Name')
+        job_title = job_description.get('title', 'the position')
+        company_name = company_info.get('name', 'your company')
+        
+        # Extract some skills
+        skills_dict = candidate_data.get('skills', {})
+        core_skills = []
+        for category, skill_list in skills_dict.items():
+            if isinstance(skill_list, list):
+                core_skills.extend(skill_list[:2])
+        skills_text = ", ".join(core_skills[:4]) if core_skills else "relevant technical skills"
+        
+        # Basic cover letter template
+        return f"""Dear Hiring Manager,
+
+I am writing to apply for the {job_title} position at {company_name}. With my background in {skills_text}, I am confident I can contribute meaningfully to your team.
+
+Throughout my career, I have focused on building scalable, reliable systems and delivering high-quality solutions. I am particularly drawn to {company_name}'s mission and would welcome the opportunity to bring my expertise to your organization.
+
+I look forward to discussing how my experience aligns with your needs.
+
+Sincerely,
+{candidate_name}"""
+    
     def customize_for_job(self, job_description, company_info):
         """Customize base data for specific job application"""
         # Deep copy to avoid modifying original
@@ -474,6 +614,21 @@ Return only the rewritten summary."""
                         job_desc_text
                     )
         
+        # Generate full AI-powered cover letter
+        if self.use_ai:
+            customized_data['cover_letter_content'] = self.generate_cover_letter_with_ai(
+                customized_data,
+                job_description,
+                company_info
+            )
+        else:
+            # Generate basic cover letter without AI
+            customized_data['cover_letter_content'] = self.generate_basic_cover_letter(
+                customized_data,
+                job_description,
+                company_info
+            )
+        
         # Add job info to the data
         customized_data['job_info'] = {
             'title': job_description.get('title', ''),
@@ -497,6 +652,8 @@ Return only the rewritten summary."""
     def generate_cover_letter(self, data, output_path):
         """Generate PDF cover letter from data"""
         template = self.template_env.get_template('cover_letter_template.html')
+        # Add current date to the data
+        data['current_date'] = datetime.now().strftime('%B %d, %Y')
         html_content = template.render(**data)
         
         # Convert HTML to PDF
