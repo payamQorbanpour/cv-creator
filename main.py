@@ -587,6 +587,152 @@ I look forward to discussing how my experience aligns with your needs.
 Sincerely,
 {candidate_name}"""
     
+    def generate_resume_with_ai(self, candidate_data, job_description, company_info):
+        """Generate a complete AI-optimized resume using the specialized prompt"""
+        if not self.use_ai:
+            return candidate_data
+        
+        # Prepare base_data.json as a string
+        base_data_str = json.dumps(candidate_data, indent=2)
+        
+        # Prepare job description text
+        jd_text = f"""Job Title: {job_description.get('title', 'N/A')}
+
+Description:
+{job_description.get('description', 'N/A')}
+
+Requirements:
+{chr(10).join(['- ' + req for req in job_description.get('requirements', [])])}
+
+Key Responsibilities:
+{chr(10).join(['- ' + resp for resp in job_description.get('key_responsibilities', [])])}
+
+Desired Skills:
+{chr(10).join(['- ' + skill for skill in job_description.get('desired_skills', [])])}"""
+
+        # Prepare company context
+        company_context = f"""Company: {company_info.get('name', 'N/A')}
+
+About:
+{company_info.get('about', 'N/A')}
+
+Industry: {company_info.get('industry', 'N/A')}
+
+Values:
+{chr(10).join(['- ' + val for val in company_info.get('values', [])])}"""
+
+        # The main prompt
+        prompt = f"""You are a senior technical recruiter, resume strategist, and hiring manager combined, with deep experience reviewing resumes for Senior Software Engineers at fast-growing startups.
+
+Your task is to generate a highly effective, ATS-friendly resume that is customized for a specific job role and company.
+
+CRITICAL DATA CONSTRAINT:
+- You MUST use ONLY the information provided in `base_data.json`
+- Do NOT invent, infer, or embellish experience, tools, metrics, or achievements
+- If information is missing, omit it rather than guessing
+
+INPUTS:
+1) base_data.json:
+{base_data_str}
+
+2) Job description (JD):
+{jd_text}
+
+3) Company context:
+{company_context}
+
+RESUME STRATEGY REQUIREMENTS:
+- Rewrite experience bullet points to align with:
+  • Job requirements
+  • Company technical needs
+  • Business impact relevant to the role
+- Reorder bullet points by relevance to the target role
+- Emphasize outcomes, ownership, scale, and reliability
+- Translate responsibilities into impact-driven statements
+- Use strong, precise engineering verbs (designed, built, scaled, optimized, owned, led)
+
+FORMAT & STRUCTURE:
+- Length: 1 page (max 2 pages only if experience clearly justifies it)
+- Sections (only include if data exists in base_data.json):
+  • Header (Name, Title, Location, Contact)
+  • Summary (2–3 lines, tailored to the role)
+  • Experience
+  • Skills (grouped logically)
+  • Education
+  • Optional: Open Source / Publications / Projects
+
+BULLET POINT RULES (VERY IMPORTANT):
+- Each bullet must:
+  • Be derived from base_data.json
+  • Be tailored to the JD and company
+  • Start with a strong action verb
+  • Highlight impact, scale, or reliability where available
+- Avoid generic phrasing:
+  ❌ "Worked on…"
+  ❌ "Responsible for…"
+  ❌ "Helped with…"
+- Prefer:
+  ✅ "Designed and maintained…"
+  ✅ "Improved system reliability by…"
+- 3–5 bullets per role, maximum
+
+STYLE & TONE:
+- Senior-level, confident, concise
+- Clear technical language (no buzzword stuffing)
+- Human-readable, not corporate boilerplate
+- No first-person pronouns (no "I", "my")
+
+ATS OPTIMIZATION:
+- Use keywords naturally from the job description
+- Avoid tables, graphics, icons, or emojis
+- Use standard section headers
+- Keep formatting simple and clean
+
+OUTPUT REQUIREMENTS:
+- Output a complete JSON object that matches the structure of base_data.json
+- Include all sections: personal_info, summary, experience (with rewritten/reordered bullets), education, skills, projects, certifications
+- For experience section: rewrite each bullet point to be tailored to the job
+- Reorder bullets by relevance (most relevant first)
+- Keep the same structure as base_data.json but with optimized content
+- Do NOT add new experiences or roles
+- Do NOT add information not present in base_data.json
+- Return ONLY valid JSON, no markdown formatting, no explanations
+
+Generate the optimized resume data now in JSON format."""
+
+        try:
+            print("  🤖 Generating AI-optimized resume...")
+            result = self.call_ai_api(
+                messages=[
+                    {"role": "system", "content": "You are a senior technical recruiter and resume strategist who creates highly effective, ATS-friendly resumes tailored to specific job roles. You always return valid JSON that matches the input structure."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.5,
+                max_tokens=4000
+            ).strip()
+            
+            # Remove markdown code blocks if present
+            if result.startswith('```'):
+                result = result.split('```')[1]
+                if result.startswith('json'):
+                    result = result[4:]
+                result = result.strip()
+            
+            optimized_data = json.loads(result)
+            print("  ✓ Resume optimized successfully with AI")
+            
+            # Validate that we have the key sections
+            if 'personal_info' not in optimized_data or 'experience' not in optimized_data:
+                print("  ⚠️  AI response missing key sections, using fallback optimization")
+                return candidate_data
+            
+            return optimized_data
+            
+        except Exception as e:
+            print(f"  ⚠️  AI resume generation failed: {e}")
+            print("  → Falling back to basic optimization")
+            return candidate_data
+    
     def customize_for_job(self, job_description, company_info):
         """Customize base data for specific job application"""
         # Deep copy to avoid modifying original
@@ -598,21 +744,35 @@ Sincerely,
         if job_description.get('requirements'):
             job_desc_text += "\n\nRequirements:\n" + "\n".join(job_description.get('requirements', []))
         
-        # AI-optimize summary if enabled
-        if self.use_ai and 'summary' in customized_data:
-            customized_data['summary'] = self.optimize_summary_with_ai(
-                customized_data['summary'],
-                job_desc_text
+        # Use AI to generate optimized resume if enabled
+        if self.use_ai:
+            # Generate complete AI-optimized resume
+            ai_optimized_data = self.generate_resume_with_ai(
+                customized_data,
+                job_description,
+                company_info
             )
-        
-        # AI-optimize experience bullets if enabled
-        if self.use_ai and 'experience' in customized_data:
-            for exp in customized_data['experience']:
-                if 'responsibilities' in exp:
-                    exp['responsibilities'] = self.optimize_resume_bullets_with_ai(
-                        exp['responsibilities'],
-                        job_desc_text
-                    )
+            # Replace customized_data with AI-optimized version
+            # Keep the original structure but use AI-optimized content
+            if ai_optimized_data:
+                customized_data = ai_optimized_data
+        else:
+            # Fallback: Use old optimization methods
+            # AI-optimize summary if enabled
+            if 'summary' in customized_data:
+                customized_data['summary'] = self.optimize_summary_with_ai(
+                    customized_data['summary'],
+                    job_desc_text
+                )
+            
+            # AI-optimize experience bullets if enabled
+            if 'experience' in customized_data:
+                for exp in customized_data['experience']:
+                    if 'responsibilities' in exp:
+                        exp['responsibilities'] = self.optimize_resume_bullets_with_ai(
+                            exp['responsibilities'],
+                            job_desc_text
+                        )
         
         # Generate full AI-powered cover letter
         if self.use_ai:

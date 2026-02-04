@@ -6,7 +6,8 @@ Generate customized resumes and cover letters tailored to specific job applicati
 
 - **Plain Text Input**: Simply copy/paste job descriptions and company information - no need for structured JSON
 - **AI-Powered Parsing** (optional): Automatically extracts key information from plain text job postings
-- **Smart Customization** (optional): AI tailors your resume bullets and summary to match job requirements
+- **AI Resume Generation** (optional): Complete resume rewrite with bullet points tailored to job requirements, company needs, and business impact
+- **AI Cover Letter Generation** (optional): Professional, authentic cover letters that avoid clichés and emphasize impact
 - **Professional Templates**: Clean, modern PDF templates optimized for ATS systems
 - **Application Tracking**: Organizes generated documents by company and date
 - **Works Without AI**: Generate resumes without OpenAI API key (using base data without optimization)
@@ -97,11 +98,23 @@ python main.py -j job.txt -c company.txt --use-ai
 - Still generate professional PDF documents
 
 **With AI enabled** (`--use-ai` flag), the tool will:
+**With AI enabled** (`--use-ai` flag), the tool will:
 - Parse the job description to extract requirements, skills, and responsibilities
 - Parse company information to understand their culture and values
-- Customize your resume bullets and summary to match the job
-- Generate both a resume and cover letter
+- **Generate a complete AI-optimized resume** with:
+  - Rewritten bullet points tailored to the job description
+  - Reordered experience bullets by relevance to the target role
+  - Emphasis on outcomes, ownership, scale, and reliability
+  - Strong action verbs and impact-driven statements
+  - ATS-friendly keywords naturally integrated
+- **Generate an authentic, human-sounding cover letter** that:
+  - Starts with a strong hook highlighting impact
+  - Connects your experience to the company's mission
+  - Avoids generic phrases and corporate jargon
+  - Emphasizes measurable outcomes and engineering ownership
 - Save everything in a timestamped folder under `applications/`
+
+**Important:** The AI only uses information from your `base_data.json` - it never invents experience, skills, or achievements.
 
 ### Command Line Options
 
@@ -120,13 +133,24 @@ Options:
 ## How It Works
 
 1. **Input Processing**: Accepts plain text or JSON files for job and company information
-2. **AI Parsing** (if enabled): Uses GPT-4 to extract structured data from unstructured text
-3. **Smart Customization** (if enabled): 
-   - Rewrites your professional summary to align with the role
-   - Optimizes resume bullets to emphasize relevant experience
-   - Maintains authenticity - never invents skills or experience
-4. **Document Generation**: Creates professional PDF documents using customized templates
-5. **Archive Management**: Saves all versions and source data for future reference
+2. **AI Parsing** (if enabled): Uses AI to extract structured data from unstructured text
+3. **AI Resume Generation** (if enabled): 
+   - Analyzes your `base_data.json` in the context of the job description and company
+   - Rewrites ALL experience bullet points to:
+     - Align with job requirements and company technical needs
+     - Emphasize business impact relevant to the role
+     - Start with strong action verbs (designed, built, scaled, optimized)
+     - Highlight outcomes, ownership, scale, and reliability
+   - Reorders bullet points by relevance (most relevant first)
+   - Optimizes professional summary to match the role
+   - Maintains 100% accuracy - never invents skills or experience
+4. **AI Cover Letter Generation** (if enabled):
+   - Creates a confident, senior-level cover letter
+   - Focuses on concrete achievements and engineering ownership
+   - Avoids clichés like "I am excited to apply" or "passionate about technology"
+   - Connects your experience to company mission and specific role
+5. **Document Generation**: Creates professional PDF documents using customized templates
+6. **Archive Management**: Saves all versions and source data for future reference
 
 ## Output Structure
 
@@ -144,10 +168,29 @@ applications/
 
 ## Tips for Best Results
 
-1. **Complete Base Data**: Fill out `inputs/base_data.json` thoroughly with your real experience
-2. **Detailed Input**: More context in job/company files = better customization
-3. **Review Before Sending**: Always review generated documents before submitting
-4. **Update Base Data**: Keep your base data current as you gain new skills/experience
+### Resume Generation
+1. **Complete Base Data**: Fill out `inputs/base_data.json` thoroughly with your real experience, including:
+   - Specific metrics and achievements (e.g., "improved performance by 30%", "handled 100,000+ users")
+   - Technical tools and technologies you've used
+   - Team sizes you've led or mentored
+   - Scale of systems you've built (users, requests, uptime, etc.)
+2. **Detailed Job Input**: More context in job/company files = better customization
+3. **AI Strategy**: The AI follows a senior-level resume strategy:
+   - Uses strong action verbs: designed, built, scaled, optimized, owned, led
+   - Avoids weak phrases: "worked on", "responsible for", "helped with"
+   - Emphasizes impact, scale, and reliability
+   - Keeps it human-readable, not corporate boilerplate
+   - Naturally integrates ATS keywords from the job description
+
+### Cover Letter Generation
+1. **Company Research**: Include company mission, values, and recent achievements in company info
+2. **Authentic Voice**: AI generates confident, senior-level prose without clichés
+3. **Impact Focus**: Emphasizes measurable outcomes and engineering ownership
+
+### General Tips
+1. **Review Before Sending**: Always review generated documents before submitting
+2. **Update Base Data**: Keep your base data current as you gain new skills/experience
+3. **Version Control**: All generated documents are saved with timestamps for comparison
 
 ## Requirements
 
