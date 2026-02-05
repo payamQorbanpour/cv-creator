@@ -99,11 +99,99 @@ class CVCreator:
             )
             return response.choices[0].message.content
     
+    def format_date(self, date_str):
+        """Format date to MM/YYYY standard format"""
+        if not date_str or date_str.lower() == 'present':
+            return date_str
+        
+        # Already in MM/YYYY format
+        if '/' in date_str and len(date_str.split('/')) == 2:
+            parts = date_str.split('/')
+            if len(parts[0]) == 2 and len(parts[1]) == 4:
+                return date_str
+        
+        # Year only - convert to MM/YYYY format (default to 01 for start, 12 for end)
+        if date_str.isdigit() and len(date_str) == 4:
+            # This will be called for each date individually, so we can't determine if it's start or end here
+            # We'll default to 01 for now, and handle it in the validation function
+            return f"01/{date_str}"
+        
+        # Try to parse common formats
+        date_str = date_str.strip()
+        
+        # Format: "Jan 2020", "January 2020"
+        for fmt in ['%b %Y', '%B %Y']:
+            try:
+                dt = datetime.strptime(date_str, fmt)
+                return dt.strftime('%m/%Y')
+            except ValueError:
+                continue
+        
+        # Format: "01/2020", "1/2020" (already handled above but let's be safe)
+        if '/' in date_str:
+            parts = date_str.split('/')
+            if len(parts) == 2:
+                month = parts[0].zfill(2)
+                year = parts[1]
+                if len(year) == 4 and month.isdigit() and 1 <= int(month) <= 12:
+                    return f"{month}/{year}"
+        
+        # If we can't parse it, return as-is and warn
+        print(f"  ⚠️  Warning: Could not parse date '{date_str}' to MM/YYYY format")
+        return date_str
+    
+    def validate_and_format_dates(self, data):
+        """Validate and format all dates in the data to MM/YYYY format"""
+        # Format experience dates
+        if 'experience' in data:
+            for exp in data['experience']:
+                if 'start_date' in exp:
+                    exp['start_date'] = self.format_date(exp['start_date'])
+                else:
+                    print(f"  ⚠️  Warning: Missing start_date for {exp.get('position', 'position')} at {exp.get('company', 'company')}")
+                    exp['start_date'] = '01/2020'  # Default fallback
+                
+                if 'end_date' in exp:
+                    exp['end_date'] = self.format_date(exp['end_date'])
+                else:
+                    print(f"  ⚠️  Warning: Missing end_date for {exp.get('position', 'position')} at {exp.get('company', 'company')}")
+                    exp['end_date'] = 'Present'  # Default to Present
+        
+        # Format education dates
+        if 'education' in data:
+            for edu in data['education']:
+                if 'start_date' in edu:
+                    # For start dates that are just years, use 09 (September - typical school start)
+                    original = edu['start_date']
+                    if original.isdigit() and len(original) == 4:
+                        edu['start_date'] = f"09/{original}"
+                    else:
+                        edu['start_date'] = self.format_date(original)
+                else:
+                    print(f"  ⚠️  Warning: Missing start_date for {edu.get('degree', 'degree')} at {edu.get('institution', 'institution')}")
+                    edu['start_date'] = '09/2020'  # Default fallback
+                
+                if 'end_date' in edu:
+                    # For end dates that are just years, use 06 (June - typical graduation)
+                    original = edu['end_date']
+                    if original.isdigit() and len(original) == 4:
+                        edu['end_date'] = f"06/{original}"
+                    else:
+                        edu['end_date'] = self.format_date(original)
+                else:
+                    print(f"  ⚠️  Warning: Missing end_date for {edu.get('degree', 'degree')} at {edu.get('institution', 'institution')}")
+                    edu['end_date'] = '06/2020'  # Default fallback
+        
+        return data
+    
     def load_base_data(self):
         """Load base personal data from JSON file"""
         if os.path.exists(self.base_data_file):
             with open(self.base_data_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                data = json.load(f)
+                # Validate and format dates
+                data = self.validate_and_format_dates(data)
+                return data
         else:
             # Create default template if not exists
             default_data = {
@@ -455,7 +543,7 @@ Return only the rewritten summary."""
         
         # Prepare candidate context
         personal_info = candidate_data.get('personal_info', {})
-        candidate_name = personal_info.get('name', 'Payam Qorbanpour')
+        candidate_name = personal_info.get('name', 'John Doe')
         current_role = candidate_data.get('experience', [{}])[0].get('title', 'Senior Software Engineer')
         location = personal_info.get('location', 'Tehran, Iran')
         
@@ -867,6 +955,9 @@ Generate the optimized resume data now in JSON format."""
         
         # Customize data for this job
         customized_data = self.customize_for_job(job_description, company_info)
+        
+        # Validate and format dates in customized data
+        customized_data = self.validate_and_format_dates(customized_data)
         
         # Create application folder
         company_name = company_info.get('name', 'Company')
